@@ -1,0 +1,38 @@
+{
+  "name": "#43",
+  "description": "",
+  "external_url": "",
+  "image": "43.webp",
+  "attributes": [
+    {
+      "trait_type": "Background",
+      "value": "20"
+    },
+    {
+      "trait_type": "Arms",
+      "value": "2"
+    },
+    {
+      "trait_type": "Feet",
+      "value": "14"
+    },
+    {
+      "trait_type": "Nose",
+      "value": "11"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "5"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "43.webp",
+        "type": "image/webp"
+      }
+    ],
+    "creators": []
+  },
+  "compiler": "https://nft-generator.art"
+}

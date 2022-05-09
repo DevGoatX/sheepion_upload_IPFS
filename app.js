@@ -30,14 +30,18 @@ async function uploadFolder(folder, type) {
   const metaUriList = [];
   console.log('------- folder name: ', folder);
 
+  const imageFolder = folder + 'image/';
+  const metadataFolder = folder + 'metadata/';
+
   // Asyncronize
-  fs.readdir(folder, async (err, files) => {
+  fs.readdir(imageFolder, async (err, files) => {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      const fileName = file.split('.')[0];
 
       // get original path name
       const metaName = `${ipfsNamePrefix}_${type}_original_${i}`;
-      const imagePath = folder + file;
+      const imagePath = imageFolder + file;
       const originalHash = await uploadImage(imagePath, metaName);
       console.log(`------- ${type} ${i + 1}th image hash: ${originalHash}`);
 
@@ -48,29 +52,53 @@ async function uploadFolder(folder, type) {
       await thumbnailImage.toFile(thumbnailPath);
       const thumbnailHash = await uploadImage(thumbnailPath, thumMetaName);
       console.log(`------- ${type} ${i + 1}th thumbnail hash: ${thumbnailHash}`);
+
+      // read metadata from file
+      try {
+        const jsonString = fs.readFileSync(metadataFolder + fileName + '.json');
+        let metadata = JSON.parse(jsonString);
+        metadata.image = getContentUrl(thumbnailHash);
+        metadata.rarity_type = type;
+        metadata.properties.files[0].uri = getContentUrl(originalHash);
+
+        const jsonMetaName = `${ipfsNamePrefix}_${type}_metadata_${i}.json`
+  
+        // upload json file to ipfs
+        const {IpfsHash: metadataHash} = await pinata.pinJSONToIPFS(metadata, {
+          pinataMetadata: {
+            name: jsonMetaName,
+          }
+        });
+  
+        console.log(`------- ${type} ${i + 1}th metadata hash: ${metadataHash}`);
+        metaUriList.push({metadataHash: metadataHash, thumbnailHash: thumbnailHash});
+
+      } catch (err) {
+        console.log(`------ reading error of ${metadataFolder + fileName}.json --------`);
+        continue;
+      }
     
-      const metadata = {
-        name: `#${i + 1}`,
-        description: '',
-        image: getContentUrl(originalHash),
-        external_url: 'https://sheepion.xyz',
-        rarity_type: type,
-        attributes: [
-        ],
-      };
-      console.log(`------- ${type} ${i + 1}th metadata: `, metadata);
+      // const metadata = {
+      //   name: `#${i + 1}`,
+      //   description: '',
+      //   external_url: getContentUrl(originalHash),
+      //   rarity_type: type,
+      //   attributes: [
+      //   ],
+      // };
+      // console.log(`------- ${type} ${i + 1}th metadata: `, metadata);
 
-      const jsonMetaName = `${ipfsNamePrefix}_${type}_metadata_${i}.json`
+      // const jsonMetaName = `${ipfsNamePrefix}_${type}_metadata_${i}.json`
 
-      // upload json file to ipfs
-      const {IpfsHash: metadataHash} = await pinata.pinJSONToIPFS(metadata, {
-        pinataMetadata: {
-          name: jsonMetaName,
-        }
-      });
+      // // upload json file to ipfs
+      // const {IpfsHash: metadataHash} = await pinata.pinJSONToIPFS(metadata, {
+      //   pinataMetadata: {
+      //     name: jsonMetaName,
+      //   }
+      // });
 
-      console.log(`------- ${type} ${i + 1}th metadata hash: ${metadataHash}`);
-      metaUriList.push({metadataHash: metadataHash, thumbnailHash: thumbnailHash});
+      // console.log(`------- ${type} ${i + 1}th metadata hash: ${metadataHash}`);
+      // metaUriList.push({metadataHash: metadataHash, thumbnailHash: thumbnailHash});
     }
 
     const outputName = `${outputPath}/${type}.json`;
